@@ -1,0 +1,245 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>chart</title>
+  <style>
+    body {
+      width: 960px;
+      margin: 20px auto 40px auto;
+    }
+
+    svg {
+      font-family: "Helvetica Neue", Helvetica, Aria, sans-serif;
+      font-size: 10px;
+    }
+
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: black;
+      shape-rendering: crispEdges;
+    }
+
+    path.data {
+      fill: black;
+      stroke: grey;
+      stroke-width: 1;
+    }
+
+    .average-fill {
+      fill: rgba(255, 0, 0, 0.4);
+    }
+
+    .average {
+      stroke: rgb(255, 0, 0);
+      stroke-width: 2;
+    }
+
+    .x.axis .tick.major line {
+
+    }
+
+    .y.axis .tick.major line {
+
+    }
+  </style>
+</head>
+<body>
+  <h1> Hello!</h1>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script>
+    function timeseries() {
+      var margin = { 'left' : 30, 'bottom' : 20, 'top' : 15, 'right' : 30 },
+          width = 960,
+          height = 240,
+          w = width - margin.left - margin.right,
+          h = height - margin.top - margin.bottom;
+
+      /*
+       * See documentation for d3.scale.linear() here:
+       *
+       *    https://github.com/mbostock/d3/wiki/Quantitative-Scales#linear-scales
+       *
+       * If you want to start using dates as x-values instead of numbers,
+       * replace the call to d3.scale.linear() with a call to d3.time.scale().
+       * See documentation for d3.time.scale() here:
+       *
+       *     https://github.com/mbostock/d3/wiki/Time-Scales
+       */
+      var xscale = d3.scale.linear().range([0 + 5, w]),
+          yscale = d3.scale.linear().range([h, 0]);
+
+      /* See documentation for d3.svg.axis() here:
+       *
+       *    https://github.com/mbostock/d3/wiki/SVG-Axes
+       * 
+       * In particular note the use of the tickSize() function on the y-axis.
+       * Use negative values to make ticks appear to the right of the axis and 
+       * positive values to make ticks appear the the left of the axis.
+       *
+       * Disable ticks altogether with
+       *
+       *     axis.tickValues([])
+       */
+      var xaxis = d3.svg.axis()
+              .scale(xscale)
+              .orient('bottom')
+              .tickSize(0)
+              .tickValues([]),
+          yaxis = d3.svg.axis().scale(yscale).orient('left')
+              .tickSize(-12, 0)
+              .tickPadding(6);
+
+      /* 
+       * If you ever change any variables that are read by the rescale()
+       * function, you need to call rescale() in your code.
+       */
+      function rescale() {
+        xscale.domain([0, w = width - margin.left - margin.right]).range([0 + 5, w]);
+        yscale.domain([0, h = height - margin.top - margin.bottom]).range([h, 0]);
+      }
+
+      var my = function(selection) {
+        selection.each(function(data) {
+          var xmax, ymax;
+          xscale.domain([0, xmax = d3.max(data, function(d) { return d[0]; })]);
+          yscale.domain([0, ymax = d3.max(data, function(d) { return d[1]; })]);
+
+          console.log(xscale.domain(), yscale.domain());
+
+          var area = d3.svg.area()
+              .x(function(d) { return xscale(d[0]); })
+              .y(function(d) { return yscale(d[1]); })
+              .y0(h);
+
+          var svg = d3.select(this).selectAll('svg')
+              .data([data]);
+
+          var svge = svg.enter()
+            .append('svg')
+            .append('g')
+              .attr('class', 'wrapper');
+
+          svg 
+              .attr('width', width)
+              .attr('height', height)
+            .select('g.wrapper')
+              .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+          svge.append('g')
+              .attr('class', 'x axis')
+
+          svg.select('g.x.axis')
+              .attr('transform', 'translate(0, ' + h + ')')
+
+          svge.append('g')
+              .attr('class', 'y axis')
+
+          svge.append('path')
+              .attr('class', 'data');
+
+          var avg = d3.mean(data, function(d) { return d[1]; });
+
+          svge.append('rect')
+              .attr('class', 'average-fill');
+
+          svg.select('rect.average-fill')
+              .attr('x', xscale(0))
+              .attr('y', yscale(avg))
+              .attr('width', xscale(xmax) - xscale(0))
+              .attr('height', h - yscale(avg));
+
+          svge.append('line')
+              .attr('class', 'average');
+
+          svg.select('line.average')
+              .attr('x1', xscale(0))
+              .attr('x2', xscale(xmax))
+              .attr('y1', yscale(avg))
+              .attr('y2', yscale(avg));
+
+          svg.selectAll('.x.axis').call(xaxis)
+          svg.selectAll('.y.axis').call(yaxis)
+          svg.selectAll('.data').attr('d', area);
+
+          svg.exit().remove();
+        });
+      };
+
+      my.margin_right = function(m) {
+        if (!arguments.length) return margin.right;
+        margin.right = m;
+        rescale();
+        return chart;
+      };
+
+      my.margin_left = function(m) {
+        if (!arguments.length) return margin.right;
+        margin.left = m;
+        rescale();
+        return chart;
+      };
+
+      my.margin_top = function(m) {
+        if (!arguments.length) return margin.right;
+        margin.top = m;
+        rescale();
+        return chart;
+      };
+
+      my.margin_bottom = function(m) {
+        if (!arguments.length) return margin.right;
+        margin.bottom = m;
+        rescale();
+        return chart;
+      };
+
+      my.height = function(h) {
+        if (!arguments.length) return height;
+        height = h;
+        rescale();
+        return chart;
+      };
+
+      my.width = function(w) {
+        if (!arguments.length) return width;
+        width = w;
+        rescale();
+        return chart;
+      };
+
+      return my;
+    }
+
+    /*
+     * Step 1: Create a chart object by calling the timeseries() function
+     */
+    var chart = timeseries();
+
+    /*
+     * Step 2: Configure the chart using the my.* functions. You can chain them
+     * together
+     */
+    chart
+        .width(960)
+        .height(500);
+
+    /*
+     * Step 3: Use d3 to select a DOM element. Call .datum(data) on the
+     * selection, where data is a variable containing the data you want to
+     * create the timeseries chart from. The format of the data is assumed to
+     * be:
+     *
+     *     [ [number, number] ... ]
+     *
+     * Finally, call .call(chart) on that selection to draw the timeseries. Any
+     * time that you either update customizable properties of the chart, or your
+     * data changes, repeat Step 3.
+     */
+    d3.select('body')
+      .datum([[0, 4], [1, 6], [2, 8], [3, 6], [4, 6], [5, 4], [14, 10], [25, 2]])
+      .call(chart);
+  </script>
+</body>
+</html>
